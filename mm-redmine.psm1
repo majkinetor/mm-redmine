@@ -6,6 +6,20 @@ enum UserStatus
     locked      = 3
 }
 
+<#
+enum IssueOperations
+{
+    is        = '='
+    isnot     = '!='
+    any       = '*'
+    contains  = '=~'
+    ge        = '>='
+    le        = '<='
+    gt        = '>'
+    lt        = '<'
+}
+#>
+
 function Initialize-RedmineSession {
     param(
         [string] $Url,
@@ -113,10 +127,12 @@ function Get-RedmineIssue {
        [switch]  $SortDesc,
        [int]     $Offset = 0,
        [int]     $Limit = 1000,
-       [ValidateSet('attachments', 'relations')]
+       [ValidateSet('children', 'attachments', 'relations', 'changesets', 'journals', 'watchers', 'allowed_statuses')]
        [string[]]  $Include,
-       [PSCustomObject] $Filter
+       [PSCustomObject] $Filter,
+       [int]     $Id
     )
+
 
     if ($Filter) { if ($Filter.PSObject.TypeNames[0] -ne 'IssueFilter') { throw 'Invalid filter type, it should be IssueFilter' } }
 
@@ -124,11 +140,13 @@ function Get-RedmineIssue {
     $sortOrder = if ($SortDesc) { ":desc" }
     $sort      = if ($SortColumn) { "&sort={0}{1}" -f $SortColumn, $sortOrder }
     $pInclude  = if ($Include) { "&include={0}" -f ($Include -join ',') }
+    if ($Id) { $pInclude = $pInclude.Replace('&', '?') }
+
     $params = @{
-        Endpoint = "issues.json?offset=${Offset}&limit=${Limit}${pInclude}${pFilter}"
+        Endpoint = if ($Id) { "issues/$Id.json${pInclude}"} else { "issues.json?offset=${Offset}&limit=${Limit}${pInclude}${pFilter}" }
     }
     $res = Send-Request $params
-    $res.issues
+    if ($Id) { $res.issue } else { $res.issues }
 }
 function Get-RedmineTracker ($Name) {
     $params = @{
