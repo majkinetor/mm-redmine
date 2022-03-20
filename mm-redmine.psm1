@@ -14,6 +14,7 @@ function Initialize-RedmineSession {
     $script:Redmine = @{ Url = $Url; Key = $Key }
 }
 
+# https://redmine.org/projects/redmine/wiki/Rest_Memberships
 function Get-RedmineMembership {
     param(
         [string] $ProjectId
@@ -26,6 +27,7 @@ function Get-RedmineMembership {
     $res.memberships
 }
 
+# https://redmine.org/projects/redmine/wiki/Rest_Issues
 function New-RedmineIssueRelation {
     param(
         [int] $IssueId,
@@ -48,6 +50,7 @@ function New-RedmineIssueRelation {
     $res.relation
 }
 
+# https://redmine.org/projects/redmine/wiki/Rest_Issues
 function New-RedmineIssue {
     param(
         [int]    $ProjectId,
@@ -82,6 +85,7 @@ function New-RedmineIssue {
     $res.issue
 }
 
+# https://redmine.org/projects/redmine/wiki/Rest_Users
 function Get-RedmineUser {
     param(
         [int] $Offset = 0,
@@ -98,6 +102,11 @@ function Get-RedmineUser {
     $res.users
 }
 
+function Get-RedmineCustomFieldId( [Object[]]$CustomFields, [string] $Name) {
+    $CustomFields | ? name -eq $Name | % id
+}
+
+# https://redmine.org/projects/redmine/wiki/Rest_Issues
 function Get-RedmineIssue {
     param(
        [string]  $SortColumn,
@@ -173,11 +182,11 @@ function New-RedmineIssueFilter {
         [ValidateSet('open', 'closed', '*')]
         [string] $StatusId,
         [int]    $AssignedToId,
-        [string] $ParentId
+        [string] $ParentId,
+        [HashTable] $CustomFields
     )
 
-    $res = @{ Query = @() }
-
+    $res = @{}
     if ($IssueId)      { $res.issue_id       = $IssueId -join ',' }
     if ($ProjectId)    { $res.project_id     = $ProjectId }
     if ($SubprojectId) { $res.subproject_id  = $SubprojectId }
@@ -186,8 +195,15 @@ function New-RedmineIssueFilter {
     if ($AssignedToId) { $res.assigned_to_id = $AssignedToId }
     if ($ParentId)     { $res.parent_id      = $ParentId }
 
-    foreach ($element in $res.GetEnumerator()) { $res.Query += '{0}={1}' -f $element.Key, [uri]::EscapeDataString( $element.Value ) }
-    $res.Query = $res.Query -join '&'
+    $query = @()
+    foreach ($element in $res.GetEnumerator()) {
+        $query += '{0}={1}' -f $element.Key, [uri]::EscapeDataString( $element.Value )
+    }
+    foreach ($element in $CustomFields.GetEnumerator()) {
+        $query += 'cf_{0}={1}' -f $element.Key, [uri]::EscapeDataString( $element.Value )
+    }
+
+    $res.Query = $query -join '&'
 
     $o = [PSCustomObject]$res
     $o.psobject.TypeNames.Insert(0, "IssueFilter")

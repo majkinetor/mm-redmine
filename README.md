@@ -20,3 +20,23 @@ Get-RedmineProject | Format-Table
 # Get project by name
 Get-RedmineProject -Name hmr
 ```
+
+## Issues
+
+```ps1
+# Get all issues
+Get-RedmineIssue
+
+# Get project issues and show them in table
+$filter = New-RedmineIssueFilter -ProjectId $project.id
+$issues = Get-RedmineIssue -Filter $filter
+$htAuthor = @{ N='author'; E={$_.author.name} }
+$issues | Format-Table subject, $htAuthor, created_on, start_date, due_date
+
+# Filter issues by custom field by the name 'Level'
+$f = New-RedmineIssueFilter -ProjectId $p.id
+$cf = Get-RedmineIssue -Filter $filter -Limit 1 | % custom_fields
+$levelId = Get-RedmineCustomFieldId $cf Level
+$filter = New-RedmineIssueFilter -ProjectId $p.id -CustomFields @{ levelId = 'Senior' }
+Get-RedmineIssue -Filter $filter
+```
