@@ -199,8 +199,10 @@ function New-RedmineIssueFilter {
     foreach ($element in $res.GetEnumerator()) {
         $query += '{0}={1}' -f $element.Key, [uri]::EscapeDataString( $element.Value )
     }
-    foreach ($element in $CustomFields.GetEnumerator()) {
-        $query += 'cf_{0}={1}' -f $element.Key, [uri]::EscapeDataString( $element.Value )
+    if ($CustomFields) {
+        foreach ($element in $CustomFields.GetEnumerator()) {
+            $query += 'cf_{0}={1}' -f $element.Key, [uri]::EscapeDataString( $element.Value )
+        }
     }
 
     $res.Query = $query -join '&'
