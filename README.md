@@ -44,4 +44,7 @@ $cf = Get-RedmineIssue -Filter $filter -Limit 1 | % custom_fields
 $levelId = Get-RedmineCustomFieldId $cf Level
 $filter = New-RedmineIssueFilter -ProjectId $p.id -CustomFields @{ levelId = 'Senior' }
 Get-RedmineIssue -Filter $filter
+
+# Add watcher
+Add-RedmineIssueWatcher -IssueId 1124  -UserId 9
 ```
