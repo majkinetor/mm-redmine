@@ -7,7 +7,7 @@ WIP - Redmine PowerShell module
 ```ps1
 # Login to redmine using your key: My account -> API access key
 # Must have Administration -> Settings -> API -> [x] Enable REST web service
-Initialize-RedmineSession -Url 'https://redmine.org' -Key '<key>'
+Initialize-RedmineSession -Url 'https://redmine...' -Key '<key>'
 ```
 
 ## Projects
