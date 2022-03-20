@@ -24,7 +24,12 @@ Get-RedmineProject -Name hmr
 ## Issues
 
 ```ps1
+
+#Get single issue
+Get-RedmineIssue -Id 112 -Include watchers
+
 # Get all issues
+
 Get-RedmineIssue
 
 # Get project issues and show them in table
