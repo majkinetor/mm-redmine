@@ -28,6 +28,15 @@ function Initialize-RedmineSession {
     $script:Redmine = @{ Url = $Url; Key = $Key }
 }
 
+function Add-RedmineIssueWatcher([int]$IssueId, [string[]] $UserId) {
+    $params = @{
+        Method = 'Post'
+        Endpoint = "issues/${IssueId}/watchers.json"
+        Body  = @{ user_id = $UserId }
+    }
+    $res = Send-Request $params
+}
+
 # https://redmine.org/projects/redmine/wiki/Rest_Memberships
 function Get-RedmineMembership {
     param(
@@ -58,7 +67,7 @@ function New-RedmineIssueRelation {
     $params = @{
         Method   = 'POST'
         Endpoint = "issues/${IssueId}/relations.json"
-        Body = @{ relation = $relation } | ConvertTo-Json
+        Body = @{ relation = $relation }
     }
     $res = Send-Request $params
     $res.relation
@@ -132,7 +141,6 @@ function Get-RedmineIssue {
        [PSCustomObject] $Filter,
        [int]     $Id
     )
-
 
     if ($Filter) { if ($Filter.PSObject.TypeNames[0] -ne 'IssueFilter') { throw 'Invalid filter type, it should be IssueFilter' } }
 
@@ -236,9 +244,12 @@ function send-request( [HashTable] $Params ) {
     if (!$p.Uri)         { $p.Uri = '{0}/{1}' -f $Redmine.Url, $p.EndPoint }
     if (!$p.ContentType) { $p.ContentType = 'application/json; charset=utf-8' }
     if (!$p.Headers)     { $p.Headers = @{} }
+    if ($p.Body)         { $p.Body = $p.Body | ConvertTo-Json }
+
     $p.Headers."X-Redmine-API-Key" = $Redmine.Key
     $p.Remove('EndPoint')
-    $p | ConvertTo-Json -Depth 100 | Write-Verbose
+
+    ($p | ConvertTo-Json -Depth 100).Replace('\"', '"').Replace('\r\n', '') | Write-Verbose
     Invoke-RestMethod @p
 }
 
