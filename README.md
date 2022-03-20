@@ -1,2 +1,3 @@
 # mm-redmine
-Redmine PowerShell module
+
+WIP - Redmine PowerShell module
