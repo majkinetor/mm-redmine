@@ -1,0 +1,215 @@
+enum UserStatus
+{
+    anonymous   = 0
+    active      = 1
+    registered  = 2
+    locked      = 3
+}
+
+function Initialize-RedmineSession {
+    param(
+        [string] $Url,
+        [string] $Key
+    )
+    $script:Redmine = @{ Url = $Url; Key = $Key }
+}
+
+function Get-RedmineMembership {
+    param(
+        [string] $ProjectId
+    )
+
+    $params = @{
+        Endpoint = "projects/${ProjectId}/memberships.json"
+    }
+    $res = Send-Request $params
+    $res.memberships
+}
+
+function New-RedmineIssueRelation {
+    param(
+        [int] $IssueId,
+        [int] $IssueToId,
+        [ValidateSet('relates', 'duplicates', 'duplicated', 'blocks', 'blocked', 'precedes', 'follows', 'copied_to', 'copied_from')]
+        [string] $RelationType = 'relates'
+    )
+
+    $relation = @{
+        issue_to_id   = $IssueToId
+        relation_type = $RelationType
+    }
+
+    $params = @{
+        Method   = 'POST'
+        Endpoint = "issues/${IssueId}/relations.json"
+        Body = @{ relation = $relation } | ConvertTo-Json
+    }
+    $res = Send-Request $params
+    $res.relation
+}
+
+function New-RedmineIssue {
+    param(
+        [int]    $ProjectId,
+        [int]    $TrackerId,
+        [string] $Subject,
+        [string] $Description,
+        [int]    $StatusId,
+        [int]    $PriorityId,
+        [int]    $CategoryId,
+        [int]    $AssigneeId,
+        [int[]]  $WatcherId
+    )
+
+    $issue = @{
+        project_id  = $ProjectId
+        tracker_id  = $TrackerId
+        subject     = $Subject
+        description = $Description
+    }
+    if ($StatusId)   { $issue.status_id = $StatusId }
+    if ($PriorityId) { $issue.priority_id = $PriorityId }
+    if ($CategoryId) { $issue.category_id = $CategoryId }
+    if ($AssigneeId) { $issue.assigned_to_id = $AssigneeId }
+    if ($WatcherId)  { $issue.watcher_user_ids = $WatcherId }
+
+    $params = @{
+        Method   = 'POST'
+        Endpoint = "issues.json"
+        Body = @{ issue = $issue } | ConvertTo-Json
+    }
+    $res = Send-Request $params
+    $res.issue
+}
+
+function Get-RedmineUser {
+    param(
+        [int] $Offset = 0,
+        [int] $Limit = 1000,
+        [PSCustomObject] $Filter
+    )
+    if ($Filter) { if ($Filter.PSObject.TypeNames[0] -ne 'UserFilter') { throw 'Invalid filter type, it should be UserFilter' } }
+
+    $pFilter = if ($Filter) { "&$($Filter.Query)" }
+    $params = @{
+        Endpoint = "users.json?offset=${Offset}&limit=${Limit}${pFilter}"
+    }
+    $res = Send-Request $params
+    $res.users
+}
+
+function Get-RedmineIssue {
+    param(
+       [string]  $SortColumn,
+       [switch]  $SortDesc,
+       [int]     $Offset = 0,
+       [int]     $Limit = 1000,
+       [ValidateSet('attachments', 'relations')]
+       [string[]]  $Include,
+       [PSCustomObject] $Filter
+    )
+
+    if ($Filter) { if ($Filter.PSObject.TypeNames[0] -ne 'IssueFilter') { throw 'Invalid filter type, it should be IssueFilter' } }
+
+    $pFilter   = if ($Filter) { "&$($Filter.Query)" }
+    $sortOrder = if ($SortDesc) { ":desc" }
+    $sort      = if ($SortColumn) { "&sort={0}{1}" -f $SortColumn, $sortOrder }
+    $pInclude  = if ($Include) { "&include={0}" -f ($Include -join ',') }
+    $params = @{
+        Endpoint = "issues.json?offset=${Offset}&limit=${Limit}${pInclude}${pFilter}"
+    }
+    $res = Send-Request $params
+    $res.issues
+}
+function Get-RedmineTracker ($Name) {
+    $params = @{
+        EndPoint = "trackers.json"
+    }
+    $res = Send-Request $params
+    if ($Name) { $res.trackers | ? name -eq $Name }
+    else { $res.trackers }
+}
+
+# https://www.redmine.org/projects/redmine/wiki/Rest_Projects
+function Get-RedmineProject {
+    param(
+        [string] $Name
+    )
+
+    $params = @{ Endpoint = 'projects'}
+    $params.Endpoint += if ($Name) { "/$Name.json" } else { '.json' }
+    $params.Endpoint += '?include=trackers,issue_categories,enabled_modules,time_entry_activities'
+    $res = Send-Request $params
+    if ($Name) { $res.project } else { $res.projects }
+}
+
+# https://www.redmine.org/projects/redmine/wiki/Rest_Users
+function New-RedmineUserFilter {
+    [CmdletBinding()]
+    param(
+        [UserStatus] $Status,
+        [string]     $Name,
+        [int]        $GroupId
+    )
+
+    $res = @{ Query = @() }
+    if ($Status)  { $res.status = [int] $Status }
+    if ($Name)    { $res.name = $Name }
+    if ($GroupId) { $res.group_id = $GroupId }
+
+    $o = [PSCustomObject]$res
+    $o.psobject.TypeNames.Insert(0, "UserFilter")
+    $o
+}
+
+# https://www.redmine.org/projects/redmine/wiki/Rest_Issues
+function New-RedmineIssueFilter {
+    [CmdletBinding()]
+    param(
+        [int[]]  $IssueId,
+        [int]    $ProjectId,
+        [int]    $SubprojectId,
+        [int]    $TrackerId,
+        [ValidateSet('open', 'closed', '*')]
+        [string] $StatusId,
+        [int]    $AssignedToId,
+        [string] $ParentId
+    )
+
+    $res = @{ Query = @() }
+
+    if ($IssueId)      { $res.issue_id       = $IssueId -join ',' }
+    if ($ProjectId)    { $res.project_id     = $ProjectId }
+    if ($SubprojectId) { $res.subproject_id  = $SubprojectId }
+    if ($TrackerId)    { $res.tracker_id     = $TrackerId }
+    if ($StatusId)     { $res.status_id      = $StatusId }
+    if ($AssignedToId) { $res.assigned_to_id = $AssignedToId }
+    if ($ParentId)     { $res.parent_id      = $ParentId }
+
+    foreach ($element in $res.GetEnumerator()) { $res.Query += '{0}={1}' -f $element.Key, [uri]::EscapeDataString( $element.Value ) }
+    $res.Query = $res.Query -join '&'
+
+    $o = [PSCustomObject]$res
+    $o.psobject.TypeNames.Insert(0, "IssueFilter")
+    $o
+}
+
+function send-request( [HashTable] $Params ) {
+    $p = $Params.Clone()
+    if (!$p.Method)      { $p.Method = 'Get' }
+    if (!$p.Uri)         { $p.Uri = '{0}/{1}' -f $Redmine.Url, $p.EndPoint }
+    if (!$p.ContentType) { $p.ContentType = 'application/json; charset=utf-8' }
+    if (!$p.Headers)     { $p.Headers = @{} }
+    $p.Headers."X-Redmine-API-Key" = $Redmine.Key
+    $p.Remove('EndPoint')
+    $p | ConvertTo-Json -Depth 100 | Write-Verbose
+    Invoke-RestMethod @p
+}
+
+# $pre = Get-ChildItem Function:\*
+# Get-ChildItem "$PSScriptRoot\*.ps1" | ? { $_.Name -cmatch '^[A-Z]+' } | % { . $_  }
+# $post = Get-ChildItem Function:\*
+# $funcs = Compare-Object $pre $post | Select-Object -Expand InputObject | Select-Object -Expand Name
+# $funcs | ? { $_ -cmatch '^[A-Z]+'} | % { Export-ModuleMember -Function $_ }
+
+# Export-ModuleMember -Alias *
