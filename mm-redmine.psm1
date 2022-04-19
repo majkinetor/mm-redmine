@@ -27,6 +27,7 @@ function Remove-RedmineUser( [int] $UserId ) {
         Endpoint = "users/$UserId.json"
     }
     $res = Send-Request $params
+    $res
 }
 
 # https://www.redmine.org/projects/redmine/wiki/Rest_Users#POST
@@ -70,6 +71,7 @@ function New-RedmineUser {
         Body  = @{ user = $user }
     }
     $res = Send-Request $params
+    $res.user
 }
 
 function Initialize-RedmineSession {

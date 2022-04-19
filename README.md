@@ -48,3 +48,24 @@ Get-RedmineIssue -Filter $filter
 # Add watcher
 Add-RedmineIssueWatcher -IssueId 1124  -UserId 9
 ```
+
+## Users
+
+```ps1
+# Create user
+$user = @{
+    Login                      = 'test'
+    Password                   = 'test'
+    Firstname                  = 'test'
+    Lastname                   = 'test'
+    Mail                       = 'example@example.com'
+    AuthenticationSourceId     = 0
+    MustChangePassword         = $false
+    SendInformation            = $false
+    GeneratePassword           = $false
+}
+$user = New-RedmineUser @user
+
+# Remove user
+Remove-RedmineUser $user.id
+```
