@@ -20,6 +20,58 @@ enum IssueOperations
 }
 #>
 
+# https://www.redmine.org/projects/redmine/wiki/Rest_Users#DELETE
+function Remove-RedmineUser( [int] $UserId ) {
+    $params = @{
+        Method = 'Delete'
+        Endpoint = "users/$UserId.json"
+    }
+    $res = Send-Request $params
+}
+
+# https://www.redmine.org/projects/redmine/wiki/Rest_Users#POST
+function New-RedmineUser {
+    param(
+        [Parameter(Mandatory=$true)]
+        [string] $Login,
+
+        [string] $Password,
+
+        [Parameter(Mandatory=$true)]
+        [string] $Firstname,
+
+        [Parameter(Mandatory=$true)]
+        [string] $Lastname,
+
+        [Parameter(Mandatory=$true)]
+        [string] $Mail,
+
+        [int] $AuthenticationSourceId = 0,
+        [switch] $MustChangePassword,
+        [switch] $SendInformation,
+        [switch] $GeneratePassword
+    )
+
+    $user = @{
+        login = $Login
+        firstname = $Firstname
+        lastname = $Lastname
+        mail = $Mail
+        password = $Password
+        auth_source_id = $AuthenticationSourceId
+    }
+    if ($MustChangePassword) { $user.must_change_passwd = $true }
+    if ($SendInformation)    { $user.send_information = $true }
+    if ($GeneratePassword)   { $user.generate_password = $true }
+
+    $params = @{
+        Method = 'Post'
+        Endpoint = "users.json"
+        Body  = @{ user = $user }
+    }
+    $res = Send-Request $params
+}
+
 function Initialize-RedmineSession {
     param(
         [string] $Url,
