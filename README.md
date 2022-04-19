@@ -25,7 +25,7 @@ Get-RedmineProject -Name hmr
 
 ```ps1
 
-#Get single issue
+# Get single issue
 Get-RedmineIssue -Id 112 -Include watchers
 
 # Get all issues
@@ -69,3 +69,20 @@ $user = New-RedmineUser @user
 # Remove user
 Remove-RedmineUser $user.id
 ```
+
+# All functions
+
+1. Add-RedmineIssueWatcher
+1. Get-RedmineCustomFieldId
+1. Get-RedmineIssue
+1. Get-RedmineMembership
+1. Get-RedmineProject
+1. Get-RedmineTracker
+1. Get-RedmineUser
+1. Initialize-RedmineSession
+1. New-RedmineIssue
+1. New-RedmineIssueFilter
+1. New-RedmineIssueRelation
+1. New-RedmineUser
+1. New-RedmineUserFilter
+1. Remove-RedmineUser
