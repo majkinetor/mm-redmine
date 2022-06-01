@@ -162,6 +162,61 @@ function New-RedmineIssue {
     $res.issue
 }
 
+# https://redmine.org/projects/redmine/wiki/Rest_Issues#Updating-an-issue
+function Update-RedmineIssue {
+    param(
+        [Parameter(Mandatory = $true)]
+        [int]    $Id,
+        [int]    $ProjectId,
+        [int]    $TrackerId,
+        [string] $Subject,
+        [string] $Description,
+        [int]    $StatusId,
+        [int]    $PriorityId,
+        [int]    $CategoryId,
+        [int]    $AssigneeId,
+        [int[]]  $WatcherId,
+        [string] $Notes,
+        [switch] $PrivateNotes
+    )
+
+    $issue = @{
+        project_id  = $ProjectId
+        tracker_id  = $TrackerId
+        subject     = $Subject
+        description = $Description
+    }
+    if ($StatusId)      { $issue.status_id         = $StatusId }
+    if ($PriorityId)    { $issue.priority_id       = $PriorityId }
+    if ($CategoryId)    { $issue.category_id       = $CategoryId }
+    if ($AssigneeId)    { $issue.assigned_to_id    = $AssigneeId }
+    if ($WatcherId)     { $issue.watcher_user_ids  = $WatcherId }
+    if ($Notes)         { $issue.notes             = $Notes }
+    if ($PrivateNotes)  { $issue.private_notes     = $true }
+
+    $params = @{
+        Method   = 'PUT'
+        Endpoint = "issues.json"
+        Body = @{ issue = $issue } | ConvertTo-Json
+    }
+    $res = Send-Request $params
+    $res.issue
+}
+
+# https://redmine.org/projects/redmine/wiki/Rest_Issues#Deleting-an-issue
+function Remove-RedmineIssue {
+    param(
+        [Parameter(Mandatory = $true)]
+        [int] $Id
+    )
+    $params = @{
+        Method   = 'DELETE'
+        Endpoint = "issues.json"
+    }
+    $res = Send-Request $params
+    $res
+}
+
 # https://redmine.org/projects/redmine/wiki/Rest_Users
 function Get-RedmineUser {
     param(
