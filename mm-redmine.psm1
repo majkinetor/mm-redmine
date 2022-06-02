@@ -230,16 +230,14 @@ function Publish-RedmineFile {
     if (!(Test-Path $FilePath)) { throw "File doesn't exist: $FilePath" }
     if (!$FileName) { $FileName = Split-Path -Leaf $FilePath }
 
-    [byte[]] $bytes = Get-Content $FilePath -AsByteStream
-
     $params = @{
         Method   = 'POST'
         Endpoint = "uploads.json?filename=/$FileName.json"
         ContentType = "application/octet-stream"
-        Body = $bytes
+        InFile      = $FilePath
     }
 
-    $res = Send-Request $params -NoJsonBody
+    $res = Send-Request $params
     $res.upload
 }
 
@@ -373,7 +371,8 @@ function New-RedmineIssueFilter {
     $o
 }
 
-function send-request( [HashTable] $Params, [switch] $NoJsonBody ) {
+# Any Invoke-RestMethod parameters are provided as HashTable except Endpoint which is removed
+function send-request( [HashTable] $Params ) {
     $p = $Params.Clone()
     if (!$p.Method)      { $p.Method = 'Get' }
     if (!$p.Uri)         { $p.Uri = '{0}/{1}' -f $Redmine.Url, $p.EndPoint }
