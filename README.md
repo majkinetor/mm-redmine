@@ -1,8 +1,20 @@
-# mm-redmine
+# Redmine PowerShell Module
 
-WIP - Redmine PowerShell module
+## How to use
 
-## Login
+1. Obtain Redmine API key via *My Account -> API access key*
+1. Import module: `import-module mm-redmine`
+1. Initialize session: `Initialize-RedmineSession -Url 'https://redmine...' -Key '<key>'`
+
+You can use any module function now. To get a list of available functions invoke: `Get-Command -Module mm-redmine`.
+
+## Prerequisites
+
+Nothing particular is required. Works with PowerShell 3+.
+
+## Examples
+
+### Login
 
 ```ps1
 # Login to redmine using your key: My account -> API access key
@@ -10,7 +22,7 @@ WIP - Redmine PowerShell module
 Initialize-RedmineSession -Url 'https://redmine...' -Key '<key>'
 ```
 
-## Projects
+### Projects
 
 ```ps1
 
@@ -18,10 +30,10 @@ Initialize-RedmineSession -Url 'https://redmine...' -Key '<key>'
 Get-RedmineProject | Format-Table
 
 # Get project by name
-Get-RedmineProject -Name hmr
+Get-RedmineProject -Name test
 ```
 
-## Issues
+### Issues
 
 ```ps1
 
@@ -29,7 +41,6 @@ Get-RedmineProject -Name hmr
 Get-RedmineIssue -Id 112 -Include watchers
 
 # Get all issues
-
 Get-RedmineIssue
 
 # Get project issues and show them in table
@@ -39,17 +50,21 @@ $htAuthor = @{ N='author'; E={$_.author.name} }
 $issues | Format-Table subject, $htAuthor, created_on, start_date, due_date
 
 # Filter issues by custom field by the name 'Level'
-$f = New-RedmineIssueFilter -ProjectId $p.id
-$cf = Get-RedmineIssue -Filter $filter -Limit 1 | % custom_fields
+## get custom field Level as id
+$filter  = New-RedmineIssueFilter -ProjectId $p.id
+$cf      = Get-RedmineIssue -Filter $filter -Limit 1 | % custom_fields
 $levelId = Get-RedmineCustomFieldId $cf Level
-$filter = New-RedmineIssueFilter -ProjectId $p.id -CustomFields @{ levelId = 'Senior' }
+$filter  = New-RedmineIssueFilter -ProjectId $p.id -CustomFields @{ levelId = 'Senior' }
 Get-RedmineIssue -Filter $filter
 
 # Add watcher
 Add-RedmineIssueWatcher -IssueId 1124  -UserId 9
+
+# Create issue
+New-RedmineIssue -ProjectId $project.id -Subject test
 ```
 
-## Users
+### Users
 
 ```ps1
 # Create user
@@ -69,20 +84,3 @@ $user = New-RedmineUser @user
 # Remove user
 Remove-RedmineUser $user.id
 ```
-
-# All functions
-
-1. Add-RedmineIssueWatcher
-1. Get-RedmineCustomFieldId
-1. Get-RedmineIssue
-1. Get-RedmineMembership
-1. Get-RedmineProject
-1. Get-RedmineTracker
-1. Get-RedmineUser
-1. Initialize-RedmineSession
-1. New-RedmineIssue
-1. New-RedmineIssueFilter
-1. New-RedmineIssueRelation
-1. New-RedmineUser
-1. New-RedmineUserFilter
-1. Remove-RedmineUser

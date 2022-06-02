@@ -130,28 +130,29 @@ function New-RedmineIssueRelation {
 # https://redmine.org/projects/redmine/wiki/Rest_Issues
 function New-RedmineIssue {
     param(
+        [Parameter(Mandatory = $true)]
         [int]    $ProjectId,
-        [int]    $TrackerId,
+        [Parameter(Mandatory = $true)]
         [string] $Subject,
+        [int]    $TrackerId,
         [string] $Description,
         [int]    $StatusId,
         [int]    $PriorityId,
         [int]    $CategoryId,
         [int]    $AssigneeId,
-        [int[]]  $WatcherId
+        [int[]]  $WatcherId,
+        [array]  $Uploads
     )
 
-    $issue = @{
-        project_id  = $ProjectId
-        tracker_id  = $TrackerId
-        subject     = $Subject
-        description = $Description
-    }
-    if ($StatusId)   { $issue.status_id = $StatusId }
-    if ($PriorityId) { $issue.priority_id = $PriorityId }
-    if ($CategoryId) { $issue.category_id = $CategoryId }
-    if ($AssigneeId) { $issue.assigned_to_id = $AssigneeId }
+    $issue = @{ project_id = $ProjectId;  subject = $Subject }
+    if ($Description){ $issue.description      = $Description }
+    if ($TrackerId)  { $issue.tracker_id       = $TrackerId}
+    if ($StatusId)   { $issue.status_id        = $StatusId }
+    if ($PriorityId) { $issue.priority_id      = $PriorityId }
+    if ($CategoryId) { $issue.category_id      = $CategoryId }
+    if ($AssigneeId) { $issue.assigned_to_id   = $AssigneeId }
     if ($WatcherId)  { $issue.watcher_user_ids = $WatcherId }
+    if ($Uploads)    { $issue.uploads          = $Uploads }
 
     $params = @{
         Method   = 'POST'
@@ -177,26 +178,27 @@ function Update-RedmineIssue {
         [int]    $AssigneeId,
         [int[]]  $WatcherId,
         [string] $Notes,
-        [switch] $PrivateNotes
+        [switch] $PrivateNotes,
+        [array]  $Uploads
     )
+    $issue = @{}
 
-    $issue = @{
-        project_id  = $ProjectId
-        tracker_id  = $TrackerId
-        subject     = $Subject
-        description = $Description
-    }
-    if ($StatusId)      { $issue.status_id         = $StatusId }
-    if ($PriorityId)    { $issue.priority_id       = $PriorityId }
-    if ($CategoryId)    { $issue.category_id       = $CategoryId }
-    if ($AssigneeId)    { $issue.assigned_to_id    = $AssigneeId }
-    if ($WatcherId)     { $issue.watcher_user_ids  = $WatcherId }
-    if ($Notes)         { $issue.notes             = $Notes }
-    if ($PrivateNotes)  { $issue.private_notes     = $true }
+    if ($ProjectId)    { $issue.project_id       = $ProjectId }
+    if ($TrackerId)    { $issue.tracker_id       = $TrackerId }
+    if ($Subject)      { $issue.subject          = $Subject }
+    if ($Description)  { $issue.description      = $Description }
+    if ($StatusId)     { $issue.status_id        = $StatusId }
+    if ($PriorityId)   { $issue.priority_id      = $PriorityId }
+    if ($CategoryId)   { $issue.category_id      = $CategoryId }
+    if ($AssigneeId)   { $issue.assigned_to_id   = $AssigneeId }
+    if ($WatcherId)    { $issue.watcher_user_ids = $WatcherId }
+    if ($Notes)        { $issue.notes            = $Notes }
+    if ($PrivateNotes) { $issue.private_notes    = $true }
+    if ($Uploads)      { $issue.uploads          = $Uploads }
 
     $params = @{
         Method   = 'PUT'
-        Endpoint = "issues.json"
+        Endpoint = "issues/$Id.json"
         Body = @{ issue = $issue } | ConvertTo-Json
     }
     $res = Send-Request $params
@@ -209,12 +211,37 @@ function Remove-RedmineIssue {
         [Parameter(Mandatory = $true)]
         [int] $Id
     )
+
     $params = @{
         Method   = 'DELETE'
-        Endpoint = "issues.json"
+        Endpoint = "issues/$Id.json"
     }
     $res = Send-Request $params
     $res
+}
+
+# https://redmine.org/projects/redmine/wiki/Rest_api#Attaching-files
+function Publish-RedmineFile {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $FilePath,
+        [string] $FileName
+    )
+
+    if (!(Test-Path $FilePath)) { throw "File doesn't exist: $FilePath" }
+    if (!$FileName) { $FileName = Split-Path -Leaf $FilePath }
+
+    [byte[]] $bytes = Get-Content $FilePath -AsByteStream
+
+    $params = @{
+        Method   = 'POST'
+        Endpoint = "uploads.json?filename=/$FileName.json"
+        ContentType = "application/octet-stream"
+        Body = $bytes
+    }
+
+    $res = Send-Request $params
+    $res.upload
 }
 
 # https://redmine.org/projects/redmine/wiki/Rest_Users
