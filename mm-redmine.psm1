@@ -371,6 +371,82 @@ function New-RedmineIssueFilter {
     $o
 }
 
+# https://redmine.org/projects/redmine/wiki/Rest_WikiPages#Getting-the-pages-list-of-a-wiki
+function Get-RedmineWikiPages {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $ProjectName
+    )
+
+    $params = @{
+        EndPoint = "projects/$ProjectName/wiki/index.json"
+    }
+    $res = Send-Request $params
+    $res.wiki_pages
+}
+
+# https://redmine.org/projects/redmine/wiki/Rest_WikiPages#Getting-a-wiki-page
+function Get-RedmineWikiPage {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $ProjectName,
+        [Parameter(Mandatory = $true)]
+        [string] $PageName,
+        [int] $Version
+    )
+
+    $endPoint = "projects/$ProjectName/wiki/$PageName"
+    $params = @{
+        EndPoint = if ($Version) { "$endpoint/$Version.json" } else { "$endpoint.json" }
+    }
+    $res = Send-Request $params
+    $res.wiki_page
+}
+
+# https://redmine.org/projects/redmine/wiki/Rest_WikiPages#Creating-or-updating-a-wiki-page
+function Set-RedmineWikiPage {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $ProjectName,
+        [Parameter(Mandatory = $true)]
+        [string] $PageName,
+        [Parameter(Mandatory = $true)]
+        [string] $Text,
+        [string] $Comments,
+        [int] $Version,
+        [array] $Uploads
+    )
+
+    $page = @{ text = $Text }
+    if ($Version)  { $page.version  = $Version }
+    if ($Comments) { $page.comments = $Comments }
+    if ($Uploads)  { $page.uploads  = $Uploads }
+
+    $params = @{
+        Method   = "PUT"
+        EndPoint = "projects/$ProjectName/wiki/$PageName.json"
+        Body     = @{ wiki_page = $page }
+    }
+    $res = Send-Request $params
+    $res.wiki_page
+}
+
+# https://redmine.org/projects/redmine/wiki/Rest_WikiPages#Deleting-a-wiki-page
+function Remove-RedmineWikiPage {
+    param(
+        [Parameter(Mandatory = $true)]
+        [string] $ProjectName,
+        [Parameter(Mandatory = $true)]
+        [string] $PageName
+    )
+
+    $params = @{
+        Method = "DELETE"
+        EndPoint = "projects/$ProjectName/wiki/$PageName"
+    }
+    $res = Send-Request $params
+}
+
 # Any Invoke-RestMethod parameters are provided as HashTable except Endpoint which is removed
 function send-request( [HashTable] $Params ) {
     $p = $Params.Clone()

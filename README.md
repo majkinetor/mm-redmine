@@ -8,6 +8,8 @@
 
 You can use any module function now. To get a list of available functions invoke: `Get-Command -Module mm-redmine`.
 
+Use `$VerbosePreference = 'Continue'` on the top of the script or `-Verbose` option on any function to see detailed low level communication with Redmine.
+
 ## Prerequisites
 
 Nothing particular is required. Works with PowerShell 3+.
@@ -64,11 +66,31 @@ Add-RedmineIssueWatcher -IssueId 1124  -UserId 9
 New-RedmineIssue -ProjectId $project.id -Subject test
 ```
 
-## Files
+### Files
 
 ```ps1
 $u = Publish-RedmineFile $PSScriptRoot\test.ps1
-Update-RedmineIssue -Id 1474 -Uploads @([PSCustomObject]@{ token = $u.token; filename = 'test.ps1'; content_type = "text/plain" })
+Update-RedmineIssue -Id 1474 -Uploads @{ token = $u.token; filename = 'test.ps1'; content_type = "text/plain" }
+```
+
+### Wiki
+
+```ps1
+# Get all wiki pages
+$res = Get-RedmineWikiPages -ProjectName test
+$res | Format-Table
+
+# Get concrete page and convert to HTML (if in markdown)
+$page = Get-RedmineWikiPage -ProjectName test -PageName wiki
+$page.text | ConvertFrom-Markdown | % Html
+
+# Set wiki page
+$markdown = @"
+# PowerShell Test
+
+This is created/updated from ``pwsh``.
+"@
+Set-RedmineWikiPage -ProjectName test -PageName test -Text $markdown -Comments "Created by pwsh"
 ```
 
 ### Users
