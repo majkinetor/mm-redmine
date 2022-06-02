@@ -64,6 +64,13 @@ Add-RedmineIssueWatcher -IssueId 1124  -UserId 9
 New-RedmineIssue -ProjectId $project.id -Subject test
 ```
 
+## Files
+
+```ps1
+$u = Publish-RedmineFile $PSScriptRoot\test.ps1
+Update-RedmineIssue -Id 1474 -Uploads @([PSCustomObject]@{ token = $u.token; filename = 'test.ps1'; content_type = "text/plain" })
+```
+
 ### Users
 
 ```ps1

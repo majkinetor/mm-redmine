@@ -157,7 +157,7 @@ function New-RedmineIssue {
     $params = @{
         Method   = 'POST'
         Endpoint = "issues.json"
-        Body = @{ issue = $issue } | ConvertTo-Json
+        Body = @{ issue = $issue }
     }
     $res = Send-Request $params
     $res.issue
@@ -199,10 +199,9 @@ function Update-RedmineIssue {
     $params = @{
         Method   = 'PUT'
         Endpoint = "issues/$Id.json"
-        Body = @{ issue = $issue } | ConvertTo-Json
+        Body = @{ issue = $issue }
     }
     $res = Send-Request $params
-    $res.issue
 }
 
 # https://redmine.org/projects/redmine/wiki/Rest_Issues#Deleting-an-issue
@@ -240,7 +239,7 @@ function Publish-RedmineFile {
         Body = $bytes
     }
 
-    $res = Send-Request $params
+    $res = Send-Request $params -NoJsonBody
     $res.upload
 }
 
@@ -374,13 +373,13 @@ function New-RedmineIssueFilter {
     $o
 }
 
-function send-request( [HashTable] $Params ) {
+function send-request( [HashTable] $Params, [switch] $NoJsonBody ) {
     $p = $Params.Clone()
     if (!$p.Method)      { $p.Method = 'Get' }
     if (!$p.Uri)         { $p.Uri = '{0}/{1}' -f $Redmine.Url, $p.EndPoint }
     if (!$p.ContentType) { $p.ContentType = 'application/json; charset=utf-8' }
     if (!$p.Headers)     { $p.Headers = @{} }
-    if ($p.Body)         { $p.Body = $p.Body | ConvertTo-Json }
+    if ($p.Body)         { $p.Body = $p.Body | ConvertTo-Json -Depth 100 }
 
     $p.Headers."X-Redmine-API-Key" = $Redmine.Key
     $p.Remove('EndPoint')
