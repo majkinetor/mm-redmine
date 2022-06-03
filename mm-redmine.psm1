@@ -141,7 +141,8 @@ function New-RedmineIssue {
         [int]    $CategoryId,
         [int]    $AssigneeId,
         [int[]]  $WatcherId,
-        [array]  $Uploads
+        [array]  $Uploads,
+        [HashTable] $CustomFields
     )
 
     $issue = @{ project_id = $ProjectId;  subject = $Subject }
@@ -153,6 +154,12 @@ function New-RedmineIssue {
     if ($AssigneeId) { $issue.assigned_to_id   = $AssigneeId }
     if ($WatcherId)  { $issue.watcher_user_ids = $WatcherId }
     if ($Uploads)    { $issue.uploads          = $Uploads }
+    if ($CustomFields) { 
+        $issue.custom_fields = @()
+        foreach($element in $CustomFields.GetEnumerator()){
+            $issue.custom_fields += ConvertTo-Json @{ id = $element.name ; value = $element.value;  }
+        }
+    }
 
     $params = @{
         Method   = 'POST'
@@ -180,7 +187,7 @@ function Update-RedmineIssue {
         [string] $Notes,
         [switch] $PrivateNotes,
         [array]  $Uploads,
-        [array]  $CustomFields
+        [HashTable] $CustomFields
     )
     $issue = @{}
 
@@ -196,7 +203,12 @@ function Update-RedmineIssue {
     if ($Notes)        { $issue.notes            = $Notes }
     if ($PrivateNotes) { $issue.private_notes    = $true }
     if ($Uploads)      { $issue.uploads          = $Uploads }
-    if ($CustomFields) { $issue.custom_fields    = $CustomFields}
+    if ($CustomFields) { 
+        $issue.custom_fields = @()
+        foreach($element in $CustomFields.GetEnumerator()){
+            $issue.custom_fields += ConvertTo-Json @{ id = $element.name ; value = $element.value;  }
+        }
+    }
 
     $params = @{
         Method   = 'PUT'
