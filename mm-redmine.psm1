@@ -179,7 +179,8 @@ function Update-RedmineIssue {
         [int[]]  $WatcherId,
         [string] $Notes,
         [switch] $PrivateNotes,
-        [array]  $Uploads
+        [array]  $Uploads,
+        [array]  $CustomFields
     )
     $issue = @{}
 
@@ -195,6 +196,7 @@ function Update-RedmineIssue {
     if ($Notes)        { $issue.notes            = $Notes }
     if ($PrivateNotes) { $issue.private_notes    = $true }
     if ($Uploads)      { $issue.uploads          = $Uploads }
+    if ($CustomFields) { $issue.custom_fields    = $CustomFields}
 
     $params = @{
         Method   = 'PUT'
