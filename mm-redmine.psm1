@@ -157,7 +157,7 @@ function New-RedmineIssue {
     if ($CustomFields) { 
         $issue.custom_fields = @()
         foreach($element in $CustomFields.GetEnumerator()){
-            $issue.custom_fields += ConvertTo-Json @{ id = $element.name ; value = $element.value;  }
+            $issue.custom_fields +=  @{ id = $element.Key ; value = $element.value;  }
         }
     }
 
@@ -206,7 +206,7 @@ function Update-RedmineIssue {
     if ($CustomFields) { 
         $issue.custom_fields = @()
         foreach($element in $CustomFields.GetEnumerator()){
-            $issue.custom_fields += ConvertTo-Json @{ id = $element.name ; value = $element.value;  }
+            $issue.custom_fields +=  @{ id = $element.Key ; value = $element.value;  }
         }
     }
 
@@ -295,7 +295,9 @@ function Get-RedmineIssue {
     $sortOrder = if ($SortDesc) { ":desc" }
     $sort      = if ($SortColumn) { "&sort={0}{1}" -f $SortColumn, $sortOrder }
     $pInclude  = if ($Include) { "&include={0}" -f ($Include -join ',') }
-    if ($Id) { $pInclude = $pInclude.Replace('&', '?') }
+    if ($Id) { 
+        if ($include) {$pInclude = $pInclude.Replace('&', '?') }
+    }
 
     $params = @{
         Endpoint = if ($Id) { "issues/$Id.json${pInclude}"} else { "issues.json?offset=${Offset}&limit=${Limit}${pInclude}${pFilter}" }
