@@ -141,7 +141,8 @@ function New-RedmineIssue {
         [int]    $CategoryId,
         [int]    $AssigneeId,
         [int[]]  $WatcherId,
-        [array]  $Uploads
+        [array]  $Uploads,
+        [HashTable] $CustomFields
     )
 
     $issue = @{ project_id = $ProjectId;  subject = $Subject }
@@ -153,6 +154,12 @@ function New-RedmineIssue {
     if ($AssigneeId) { $issue.assigned_to_id   = $AssigneeId }
     if ($WatcherId)  { $issue.watcher_user_ids = $WatcherId }
     if ($Uploads)    { $issue.uploads          = $Uploads }
+    if ($CustomFields) { 
+        $issue.custom_fields = @()
+        foreach($element in $CustomFields.GetEnumerator()){
+            $issue.custom_fields +=  @{ id = $element.Key ; value = $element.value;  }
+        }
+    }
 
     $params = @{
         Method   = 'POST'
@@ -179,7 +186,8 @@ function Update-RedmineIssue {
         [int[]]  $WatcherId,
         [string] $Notes,
         [switch] $PrivateNotes,
-        [array]  $Uploads
+        [array]  $Uploads,
+        [HashTable] $CustomFields
     )
     $issue = @{}
 
@@ -195,6 +203,12 @@ function Update-RedmineIssue {
     if ($Notes)        { $issue.notes            = $Notes }
     if ($PrivateNotes) { $issue.private_notes    = $true }
     if ($Uploads)      { $issue.uploads          = $Uploads }
+    if ($CustomFields) { 
+        $issue.custom_fields = @()
+        foreach($element in $CustomFields.GetEnumerator()){
+            $issue.custom_fields +=  @{ id = $element.Key ; value = $element.value;  }
+        }
+    }
 
     $params = @{
         Method   = 'PUT'
@@ -281,7 +295,7 @@ function Get-RedmineIssue {
     $sortOrder = if ($SortDesc) { ":desc" }
     $sort      = if ($SortColumn) { "&sort={0}{1}" -f $SortColumn, $sortOrder }
     $pInclude  = if ($Include) { "&include={0}" -f ($Include -join ',') }
-    if ($Id) { $pInclude = $pInclude.Replace('&', '?') }
+    if ($Id -and $Include) { $pInclude = $pInclude.Replace('&', '?') }
 
     $params = @{
         Endpoint = if ($Id) { "issues/$Id.json${pInclude}"} else { "issues.json?offset=${Offset}&limit=${Limit}${pInclude}${pFilter}" }
