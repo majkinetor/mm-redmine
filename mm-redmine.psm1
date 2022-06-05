@@ -295,9 +295,7 @@ function Get-RedmineIssue {
     $sortOrder = if ($SortDesc) { ":desc" }
     $sort      = if ($SortColumn) { "&sort={0}{1}" -f $SortColumn, $sortOrder }
     $pInclude  = if ($Include) { "&include={0}" -f ($Include -join ',') }
-    if ($Id) { 
-        if ($include) {$pInclude = $pInclude.Replace('&', '?') }
-    }
+    if ($Id -and $Include) { $pInclude = $pInclude.Replace('&', '?') }
 
     $params = @{
         Endpoint = if ($Id) { "issues/$Id.json${pInclude}"} else { "issues.json?offset=${Offset}&limit=${Limit}${pInclude}${pFilter}" }
