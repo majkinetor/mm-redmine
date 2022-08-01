@@ -1,3 +1,5 @@
+# v0.1
+
 enum UserStatus
 {
     anonymous   = 0
@@ -154,7 +156,7 @@ function New-RedmineIssue {
     if ($AssigneeId) { $issue.assigned_to_id   = $AssigneeId }
     if ($WatcherId)  { $issue.watcher_user_ids = $WatcherId }
     if ($Uploads)    { $issue.uploads          = $Uploads }
-    if ($CustomFields) { 
+    if ($CustomFields) {
         $issue.custom_fields = @()
         foreach($element in $CustomFields.GetEnumerator()){
             $issue.custom_fields +=  @{ id = $element.Key ; value = $element.value;  }
@@ -203,7 +205,7 @@ function Update-RedmineIssue {
     if ($Notes)        { $issue.notes            = $Notes }
     if ($PrivateNotes) { $issue.private_notes    = $true }
     if ($Uploads)      { $issue.uploads          = $Uploads }
-    if ($CustomFields) { 
+    if ($CustomFields) {
         $issue.custom_fields = @()
         foreach($element in $CustomFields.GetEnumerator()){
             $issue.custom_fields +=  @{ id = $element.Key ; value = $element.value;  }
