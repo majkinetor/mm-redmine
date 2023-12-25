@@ -125,6 +125,17 @@ $fte = New-RedmineTimeEntriesFilter -ProjectId test -UserId $u.Id
 $te = Get-RedmineTimeEntries -Filter $fte
 $te | Format-Table
 
+# Create
+$params = @{
+   ProjectId  = 'test'
+   UserId     = $u.id
+   SpentOn    = '2023-11-29'
+   ActivityId = 1
+   Comments   = "Test"
+   Hour       = 8
+}
+$te = New-RedmineTimeEntry @params
+
 # Update
 Update-RedmineTimeEntry -Id $te.id -Comment "some comment"
 
