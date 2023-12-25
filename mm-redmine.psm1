@@ -586,20 +586,20 @@ function New-RedmineTimeEntry {
         [DateTime] $SpentOn,
         [int] $ActivityId,
         [string] $Comments,
-        [decimal] $Hours
+        [int] $Hours
     )
 
-    $te = @{}
+    $te = @{ project_id = 8 }
     if ($IssueId)    { $te.issue_id = $IssueId }
-    if ($UserId)     { $te.user_id = $UserId }
     if ($ProjectId)  { $te.project_id = $ProjectId }
+    if ($UserId)     { $te.user_id = $UserId }
     if ($SpentOn)    { $te.spent_on = $SpentOn.ToString('yyyy-MM-dd') }
     if ($ActivityId) { $te.activity_id = $ActivityId }
     if ($Comments)   { $te.comments = $Comments }
     if ($Hours)      { $te.hours = $Hours }
 
     $params = @{
-        Method = "POST"
+        Method = "post"
         Endpoint = "time_entries.json"
         Body  = @{ time_entry = $te }
     }
