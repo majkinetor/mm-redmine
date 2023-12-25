@@ -98,11 +98,11 @@ Set-RedmineWikiPage -ProjectName test -PageName test -Text $markdown -Comments "
 ```ps1
 # Create user
 $user = @{
-    Login                      = 'test'
+    Login                      = 'test_user'
     Password                   = 'test'
     Firstname                  = 'test'
-    Lastname                   = 'test'
-    Mail                       = 'example@example.com'
+    Lastname                   = 'user'
+    Mail                       = 'test_user@example.com'
     AuthenticationSourceId     = 0
     MustChangePassword         = $false
     SendInformation            = $false
@@ -112,4 +112,22 @@ $user = New-RedmineUser @user
 
 # Remove user
 Remove-RedmineUser $user.id
+```
+
+### Time Entries
+
+```ps1
+
+# Get entires for project and user
+$fu = New-RedmineUserFilter -Name test_user
+$u = Get-RedmineUser -Filter $fu
+$fte = New-RedmineTimeEntriesFilter -ProjectId test -UserId $u.Id
+$te = Get-RedmineTimeEntries -Filter $fte
+$te | Format-Table
+
+# Update
+Update-RedmineTimeEntry -Id $te.id -Comment "some comment"
+
+# Delete
+Remove-RedmineTimeEntry -Id $te.id
 ```

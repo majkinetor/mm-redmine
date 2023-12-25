@@ -261,14 +261,15 @@ function Publish-RedmineFile {
 function Get-RedmineUser {
     param(
         [int] $Offset = 0,
-        [int] $Limit = 1000,
-        [PSCustomObject] $Filter
+        [int] $Limit = 100,
+        [PSCustomObject] $Filter,
+        [int] $Id
     )
     if ($Filter) { if ($Filter.PSObject.TypeNames[0] -ne 'UserFilter') { throw 'Invalid filter type, it should be UserFilter' } }
 
     $pFilter = if ($Filter) { "&$($Filter.Query)" }
     $params = @{
-        Endpoint = "users.json?offset=${Offset}&limit=${Limit}${pFilter}"
+        Endpoint = if ($Id) { "users/$Id.json"} else {  "users.json?offset=${Offset}&limit=${Limit}${pFilter}" }
     }
     $res = Send-Request $params
     $res.users
@@ -284,7 +285,7 @@ function Get-RedmineIssue {
        [string]  $SortColumn,
        [switch]  $SortDesc,
        [int]     $Offset = 0,
-       [int]     $Limit = 1000,
+       [int]     $Limit = 100,
        [ValidateSet('children', 'attachments', 'relations', 'changesets', 'journals', 'watchers', 'allowed_statuses')]
        [string[]]  $Include,
        [PSCustomObject] $Filter,
@@ -336,10 +337,15 @@ function New-RedmineUserFilter {
         [int]        $GroupId
     )
 
-    $res = @{ Query = @() }
+    $res = @{}
     if ($Status)  { $res.status = [int] $Status }
     if ($Name)    { $res.name = $Name }
     if ($GroupId) { $res.group_id = $GroupId }
+
+    foreach ($element in $res.GetEnumerator()) {
+        $query += '{0}={1}' -f $element.Key, [uri]::EscapeDataString( $element.Value )
+    }
+    $res.Query = $query -join '&'
 
     $o = [PSCustomObject]$res
     $o.psobject.TypeNames.Insert(0, "UserFilter")
@@ -461,6 +467,144 @@ function Remove-RedmineWikiPage {
         EndPoint = "projects/$ProjectName/wiki/$PageName"
     }
     $res = Send-Request $params
+}
+
+# https://redmine.org/projects/redmine/wiki/Rest_TimeEntries
+function Get-RedmineTimeEntries {
+    param(
+        [int] $Offset = 0,
+        [int] $Limit = 100,
+        [PSCustomObject] $Filter,
+        [int] $Id
+    )
+
+    $pFilter = if ($Filter) { "&$($Filter.Query)" }
+    $params = @{
+        Endpoint = if ($Id) { "time_entries/$Id.json"} else { "time_entries.json?offset=${Offset}&limit=${Limit}${pFilter}" }
+    }
+    $res = Send-Request $params
+    if ($Id) { $res.time_entry  } else { $res.time_entries }
+}
+
+# https://redmine.org/projects/redmine/wiki/Rest_Enumerations#enumerationstime_entry_activitiesformat
+function Get-RedmineTimeEntryActivities {
+    $params = @{
+        Endpoint = "enumerations/time_entry_activities.json"
+    }
+    $res = Send-Request $params
+    $res.time_entry_activities
+}
+
+# https://redmine.org/projects/redmine/wiki/Rest_Enumerations#Enumerations
+function Get-RedmineIssuePriorities {
+    $params = @{
+        Endpoint = "enumerations/issue_priorities.json"
+    }
+    $res = Send-Request $params
+    $res.issue_priorities
+}
+
+function New-RedmineTimeEntriesFilter {
+    param(
+        [string] $ProjectId,
+        [int] $UserId,
+        [DateTime] $From,
+        [DateTime] $To,
+        [int] $ActivityId,
+        [string] $Comments,
+        [decimal] $Hours
+    )
+
+    $res = @{}
+    if ($UserId)     { $res.user_id    = $UserId }
+    if ($ProjectId)  { $res.project_id = $ProjectId }
+    if ($From)       { $res.from = $From.ToString('yyyy-MM-dd') }
+    if ($To)         { $res.to = $To.ToString('yyyy-MM-dd') }
+    if ($ActivityId) { $res.activity_id = $ActivityId }
+    if ($Comments)   { $res.comments = $Comments }
+    if ($Hours)      { $res.hours = $Hours }
+
+    $query = @()
+    foreach ($element in $res.GetEnumerator()) {
+        $query += '{0}={1}' -f $element.Key, [uri]::EscapeDataString( $element.Value )
+    }
+
+    $res.Query = $query -join '&'
+
+    $o = [PSCustomObject]$res
+    $o.psobject.TypeNames.Insert(0, "TimeEntriesFilter")
+    $o
+}
+
+#https://redmine.org/projects/redmine/wiki/Rest_TimeEntries#Deleting-a-time-entry
+function Remove-RedmineTimeEntry ([int] $Id) {
+    $params = @{
+        Method = 'Delete'
+        Endpoint = "time_entries/$Id.json"
+    }
+    $res = Send-Request $params
+    $res
+}
+
+#https://redmine.org/projects/redmine/wiki/Rest_TimeEntries#Updating-a-time-entry
+function Update-RedmineTimeEntry {
+    param(
+        [int] $Id,
+        [string] $ProjectId,
+        [int] $IssueId,
+        [int] $UserId,
+        [DateTime] $SpentOn,
+        [int] $ActivityId,
+        [string] $Comments,
+        [decimal] $Hours
+    )
+
+    $te = @{}
+    if ($IssueId)    { $te.issue_id = $IssueId }
+    if ($UserId)     { $te.user_id = $UserId }
+    if ($ProjectId)  { $te.project_id = $ProjectId }
+    if ($SpentOn)    { $te.spent_on = $SpentOn.ToString('yyyy-MM-dd') }
+    if ($ActivityId) { $te.activity_id = $ActivityId }
+    if ($Comments)   { $te.comments = $Comments }
+    if ($Hours)      { $te.hours = $Hours }
+
+    $params = @{
+        Method = "Put"
+        Endpoint = "time_entries/$Id.json"
+        Body  = @{ time_entry = $te }
+    }
+    $res = Send-Request $params
+    $res
+}
+
+# https://redmine.org/projects/redmine/wiki/Rest_TimeEntries#Creating-a-time-entry
+function New-RedmineTimeEntry {
+    param(
+        [string] $ProjectId,
+        [int] $IssueId,
+        [int] $UserId,
+        [DateTime] $SpentOn,
+        [int] $ActivityId,
+        [string] $Comments,
+        [decimal] $Hours
+    )
+
+    $te = @{}
+    if ($IssueId)    { $te.issue_id = $IssueId }
+    if ($UserId)     { $te.user_id = $UserId }
+    if ($ProjectId)  { $te.project_id = $ProjectId }
+    if ($SpentOn)    { $te.spent_on = $SpentOn.ToString('yyyy-MM-dd') }
+    if ($ActivityId) { $te.activity_id = $ActivityId }
+    if ($Comments)   { $te.comments = $Comments }
+    if ($Hours)      { $te.hours = $Hours }
+
+    $params = @{
+        Method = "POST"
+        Endpoint = "time_entries.json"
+        Body  = @{ time_entry = $te }
+    }
+    $res = Send-Request $params
+    $res
 }
 
 # Any Invoke-RestMethod parameters are provided as HashTable except Endpoint which is removed
