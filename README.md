@@ -1,5 +1,16 @@
 # Redmine PowerShell Module
 
+PowerShell client for Redmine REST API.
+
+## Features
+
+1. Projects
+1. Issues
+1. Files
+1. Wiki
+1. Users
+1. Time Entries
+
 ## How to use
 
 1. Obtain Redmine API key via *My Account -> API access key*
