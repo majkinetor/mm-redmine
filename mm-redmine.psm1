@@ -291,7 +291,7 @@ function Get-RedmineUser {
         Endpoint = if ($Id) { "users/$Id.json"} else {  "users.json?offset=${Offset}&limit=${Limit}${pFilter}" }
     }
     $res = Send-Request $params
-    $res.users
+    $Id ? $res.user : $res.users
 }
 
 function Get-RedmineCustomFieldId( [Object[]]$CustomFields, [string] $Name) {
@@ -413,7 +413,7 @@ function New-RedmineIssueFilter {
     if ($AssignedToId) { $res.assigned_to_id = $AssignedToId }
     if ($ParentId)     { $res.parent_id      = $ParentId }
     if ($UpdatedOn)    { $res.updated_on     = $UpdatedOn }
-    if ($CreateddOn)   { $res.updated_on     = $CreatedOn }
+    if ($CreatedOn)    { $res.created_on     = $CreatedOn }
 
     $query = @()
     foreach ($element in $res.GetEnumerator()) {
