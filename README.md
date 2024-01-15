@@ -74,7 +74,10 @@ Get-RedmineIssue -Filter $filter
 Add-RedmineIssueWatcher -IssueId 1124  -UserId 9
 
 # Create issue
-New-RedmineIssue -ProjectId $project.id -Subject test
+$issue = New-RedmineIssue -ProjectId $project.id -Subject test
+
+# Add issue note
+Update-RedmineIssue -Id $issue.id -Notes "test; **test2**"
 ```
 
 ### Files

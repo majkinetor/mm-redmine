@@ -22,6 +22,24 @@ enum IssueOperations
 }
 #>
 
+# Get all pages
+# Example: Get-AllPages "Get-RedmineProject"
+function Get-AllPages( [string] $Name, [hashtable] $Arguments = @{} ) {
+    $params = $Arguments.Clone()
+
+    $count = 0
+    $params.Limit = 100
+    $params.Count = [ref] $count
+
+    $res = @();
+    do {
+        $params.Offset = 100*($i++)
+        $res += . $Name @params
+
+    } while ($res.Count -lt $count)
+    $res
+}
+
 # https://www.redmine.org/projects/redmine/wiki/Rest_Users#DELETE
 function Remove-RedmineUser( [int] $UserId ) {
     $params = @{
@@ -218,6 +236,7 @@ function Update-RedmineIssue {
         Body = @{ issue = $issue }
     }
     $res = Send-Request $params
+    $res
 }
 
 # https://redmine.org/projects/redmine/wiki/Rest_Issues#Deleting-an-issue
@@ -306,6 +325,18 @@ function Get-RedmineIssue {
     $res = Send-Request $params
     if ($Id) { $res.issue } else { $res.issues }
 }
+
+# https://redmine.org/projects/redmine/wiki/Rest_IssueStatuses
+function Get-RedmineStatus($Name) {
+    $params = @{
+        EndPoint = "issue_statuses.json"
+    }
+    $res = Send-Request $params
+    if ($Name) { $res.issue_statuses | ? name -eq $Name }
+    else { $res.issue_statuses }
+}
+
+# https://www.redmine.org/projects/redmine/wiki/Rest_Trackers
 function Get-RedmineTracker ($Name) {
     $params = @{
         EndPoint = "trackers.json"
@@ -318,13 +349,17 @@ function Get-RedmineTracker ($Name) {
 # https://www.redmine.org/projects/redmine/wiki/Rest_Projects
 function Get-RedmineProject {
     param(
-        [string] $Name
+        [string] $Name,
+        [int] $Offset = 0,
+        [int] $Limit = 100,
+        [ref] $TotalCount
     )
 
     $params = @{ Endpoint = 'projects'}
     $params.Endpoint += if ($Name) { "/$Name.json" } else { '.json' }
-    $params.Endpoint += '?include=trackers,issue_categories,enabled_modules,time_entry_activities'
+    $params.Endpoint += "?offset=${Offset}&limit=${Limit}&include=trackers,issue_categories,enabled_modules,time_entry_activities"
     $res = Send-Request $params
+    if ($TotalCount) { $TotalCount.Value = $res.total_count }
     if ($Name) { $res.project } else { $res.projects }
 }
 
@@ -364,6 +399,8 @@ function New-RedmineIssueFilter {
         [string] $StatusId,
         [int]    $AssignedToId,
         [string] $ParentId,
+        [string] $UpdatedOn,
+        [string] $CreatedOn,
         [HashTable] $CustomFields
     )
 
@@ -375,6 +412,8 @@ function New-RedmineIssueFilter {
     if ($StatusId)     { $res.status_id      = $StatusId }
     if ($AssignedToId) { $res.assigned_to_id = $AssignedToId }
     if ($ParentId)     { $res.parent_id      = $ParentId }
+    if ($UpdatedOn)    { $res.updated_on     = $UpdatedOn }
+    if ($CreateddOn)   { $res.updated_on     = $CreatedOn }
 
     $query = @()
     foreach ($element in $res.GetEnumerator()) {
