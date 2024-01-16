@@ -25,18 +25,19 @@ enum IssueOperations
 # Get all pages
 # Example: Get-AllPages "Get-RedmineProject"
 function Get-AllPages( [string] $Name, [hashtable] $Arguments = @{} ) {
-    $params = $Arguments.Clone()
+    $_params = $Arguments.Clone()
 
-    $count = 0
-    $params.Limit = 100
-    $params.Count = [ref] $count
+    $_count = 0
+    $_params.Limit = 100
+    $_params.TotalCount = [ref] $_count
+    $_name = $Name
 
     $res = @();
     do {
-        $params.Offset = 100*($i++)
-        $res += . $Name @params
+        $_params.Offset = 100*($i++)
+        $res += . $_name @_params
 
-    } while ($res.Count -lt $count)
+    } while ($res.Count -lt $_count)
     $res
 }
 
