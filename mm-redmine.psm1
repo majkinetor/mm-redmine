@@ -626,7 +626,7 @@ function New-RedmineTimeEntry {
         [DateTime] $SpentOn,
         [int] $ActivityId,
         [string] $Comments,
-        [int] $Hours
+        [decimal] $Hours
     )
 
     $te = @{ project_id = 8 }
@@ -660,7 +660,7 @@ function send-request( [HashTable] $Params ) {
     $p.Remove('EndPoint')
 
     ($p | ConvertTo-Json -Depth 100).Replace('\"', '"').Replace('\r\n', '') | Write-Verbose
-    Invoke-RestMethod @p
+    Invoke-RestMethod @p -SkipCertificateCheck
 }
 
 # $pre = Get-ChildItem Function:\*
