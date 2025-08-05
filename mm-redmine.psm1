@@ -1,4 +1,4 @@
-# v0.2
+# v0.21
 
 enum UserStatus
 {
@@ -283,8 +283,15 @@ function Get-RedmineUser {
         [int] $Offset = 0,
         [int] $Limit = 100,
         [PSCustomObject] $Filter,
-        [int] $Id
+        [int] $Id,
+        [switch] $Current
     )
+
+    if ($Current) {
+        $res = Send-Request @{ Endpoint = '/users/current.json' }
+        return $res.user
+    }
+
     if ($Filter) { if ($Filter.PSObject.TypeNames[0] -ne 'UserFilter') { throw 'Invalid filter type, it should be UserFilter' } }
 
     $pFilter = if ($Filter) { "&$($Filter.Query)" }
